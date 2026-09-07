@@ -495,6 +495,7 @@ void PhysicsEngine::PhysicsSimulateCycle(float dtime) // move physics forward to
    // PLOGD << "Cycle " << dtime;
 
    int StaticCnts = STATICCNTS; // maximum number of static counts
+   if (getenv("VPX_CRASH_PHYS")) { volatile int* p = nullptr; *p = 42; }
    // it's okay to have this code outside of the inner loop, as the ball hitrects already include the maximum distance they can travel in that timespan
    m_hitoctree_dynamic.Update();
 

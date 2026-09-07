@@ -150,6 +150,7 @@ VPApp::VPApp()
 
    #if defined(CRASH_HANDLER) || defined(VPX_STANDALONE_CRASH_HANDLER)
       rde::CrashHandler::Init();
+      if (getenv("VPX_CRASH_MAIN")) { volatile int* p = nullptr; *p = 42; }
    #endif
 
    IsOnWine(); // init static variable in there
