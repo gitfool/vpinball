@@ -84,3 +84,118 @@ back down to one commit. When asked, rebuild the orphan tree from the current
 worktree state and `git push --force-with-lease`. The branch must remain
 parentless (no `master` ancestry). This squash is a deliberate, on-request
 tidy-up, not something to do automatically after every edit.
+
+## Building and testing pinmame fixes through vpinball
+
+vpinball has a hard dependency on pinmame and bundles its own copy, so we
+reproduce, fix, and test pinmame driver issues here in the vpinball build, then
+port the change to the sibling `../pinmame` checkout for the upstream PR.
+
+### The pinmame copy vpinball builds (not the standalone checkout)
+
+The build compiles its *own* pinmame, fetched by SHA, not `~/devel/pinmame`:
+- `platforms/config.sh` pins `PINMAME_SHA`; `platforms/<platform>/external.sh`
+  downloads that tarball to `external/<platform>/Release/pinmame/pinmame/` and
+  builds `libpinmame` from `cmake/libpinmame/CMakeLists.txt`. A `cache.txt` holds
+  the built SHA to skip rebuilds.
+- Patch the driver in that extracted tree, e.g. on macOS arm64:
+  `external/macos-arm64/Release/pinmame/pinmame/src/wpc/<driver>.c`.
+- Rebuild the dylib directly (fast, ~15s incremental):
+  `cmake --build external/macos-arm64/Release/pinmame/pinmame/build --target pinmame_shared -j`
+- Do NOT re-run `external.sh` to rebuild; it re-downloads the tarball and clobbers
+  the patch.
+
+### Swapping the built dylib into the app
+
+The app bundle embeds the dylib at
+`build/VPinballX_BGFX.app/Contents/Frameworks/libpinmame.<ver>.dylib`
+(with `libpinmame.dylib` symlinked to it). Copy the freshly built dylib over it,
+then re-sign ad-hoc so macOS loads it:
+
+    codesign --force --sign - build/VPinballX_BGFX.app/Contents/Frameworks/libpinmame.<ver>.dylib
+
+### Running a table
+
+Launch a table directly (background process, then read stderr via the process
+tools):
+
+    ./build/VPinballX_BGFX.app/Contents/MacOS/VPinballX_BGFX -Play "<table.vpx>"
+
+For driver-init diagnostics, a temporary `fprintf(stderr, ...)` in the driver's
+`MACHINE_INIT` is the deterministic surface (e.g. dumping each solenoid's final
+output type). Remove it before committing.
+
+Two testing modes, depending on whether the check needs gameplay:
+- **Needs user input** (playing shots, watching a visual effect): launch the table,
+  then give the user clear instructions on exactly what to do and what to look for.
+  The user plays, quits with the Esc key, and reports the result. Do not quit the
+  table yourself in this mode.
+- **No interaction** (startup dumps, log output, anything observable without
+  playing): drive it end to end yourself, read the output, and quit the table
+  yourself when done. The user is hands-off here.
+
+### The NAS tables (functional, ROMs included)
+
+Tables live at `/Volumes/Emulators/Pinball/Tables/<Table Name> (<Manufacturer> <Year>)/`.
+Every table there is complete and playable: the `vpx` file, its `vbs` file, and a
+local `zip` in `pinmame/roms/` with the ROM already present, plus altsound/pup/etc.
+as needed. Don't hunt for ROMs or assume they're missing; the table's own
+`pinmame/roms/` has them.
+
+The files you actually work with, the `vpx` and the `vbs` file, sit directly in the
+table subdirectory, not deeper. The user always extracts the `vbs` script from the
+`vpx` file so it can be searched and edited for testing: an external `vbs` file
+beside the `vpx` overrides the one embedded in the `vpx` whenever it exists, so
+editing that file is how you change table script behavior for a test.
+
+`/Volumes/Emulators` is a network drive. Two rules for touching it:
+- A broad `find` over it times out. Target known subpaths instead (the table dir,
+  its `pinmame/roms/`).
+- Don't recursively traverse a table's subdirectories: they can be very large
+  (puppacks, media, altsound). Read the top-level `vpx`/`vbs` files and the specific
+  `pinmame/roms/` path you need, nothing deeper.
+
+### Ball control (steer the ball to hit specific shots)
+
+Add to the table's `ini` file to enable the built-in debugger ball control on macOS
+BGFX:
+
+    [Editor]
+    BallControlAlwaysOn = 1
+
+Hold left mouse to steer the active ball, double-click to teleport it to the
+cursor (drops from glass height), left flipper key releases it. Revert the ini
+line when done.
+
+### Editing driver C files (capcom.c, sam.c, ...)
+
+Two traps when editing these with the normal edit tools:
+- They contain non-UTF-8 bytes (e.g. the micro sign `0xb5` in timing comments).
+- The editor strips trailing whitespace file-wide on save, producing many spurious
+  whitespace-only diff hunks.
+
+To keep the diff to just the intended change, restore the file from `origin/master`
+and apply the edit with a small script that reads/writes `encoding='latin-1'`
+(binary-safe), then verify `git diff origin/master -- <file>` shows only the
+intended hunks before committing.
+
+## Porting the fix to the pinmame repo and opening the PR
+
+Once verified in vpinball, apply the same edit to the sibling `../pinmame`
+checkout and PR it upstream.
+
+- Remotes there: `origin` = `gitfool/pinmame` (fork), `upstream` = `vpinball/pinmame`.
+- Branch off `master`, apply the edit (same latin-1-script care as above),
+  commit with a subject-only message (details go in the PR body, not the commit).
+- Push to the fork and open the PR into `vpinball/pinmame` `master` from the fork
+  branch.
+- Part numbers: write bulb/part numbers in the authentic `#89` form, but stop
+  GitHub from autolinking them as issue references. GitHub autolinks a bare `#89`
+  everywhere it renders, including commit subjects and PR/issue titles. Two ways to
+  suppress it, by context:
+  - **Prose** (PR/issue body, comments): wrap in backticks, e.g. `` `#89` ``. The
+    code span renders literally and does not autolink.
+  - **Commit subjects and PR/issue titles** (no markdown, so backticks would show
+    as literal characters): put a space after the hash, e.g. `# 89`. Any space
+    between `#` and the digits defeats the autolink while keeping the hash.
+  Leave real issue/PR references as bare `#662` so they do link.
