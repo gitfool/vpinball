@@ -121,6 +121,14 @@ tools):
 
     ./build/VPinballX_BGFX.app/Contents/MacOS/VPinballX_BGFX -Play "<table.vpx>"
 
+To exit the table yourself, send it `SIGINT` (Ctrl+C) — its signal handler now
+drives a clean shutdown (player close, PUP stop, all plugins unloaded), which the
+static-destructor crash on exit used to prevent but no longer does in current
+builds. Prefer this over a hard process kill: the graceful teardown is observable
+in the log (`Closing from signal: 2` … `Closing VPX...`), so it doubles as a way
+to confirm the exit path (and any destructor cleanup you added) runs without fault.
+Get the pid with `pgrep -f 'VPinballX_BGFX.*<table>'` and `kill -INT "$pid"`.
+
 For driver-init diagnostics, a temporary `fprintf(stderr, ...)` in the driver's
 `MACHINE_INIT` is the deterministic surface (e.g. dumping each solenoid's final
 output type). Remove it before committing.
@@ -129,10 +137,12 @@ Two testing modes, depending on whether the check needs gameplay:
 - **Needs user input** (playing shots, watching a visual effect): launch the table,
   then give the user clear instructions on exactly what to do and what to look for.
   The user plays, quits with the Esc key, and reports the result. Do not quit the
-  table yourself in this mode.
+  table yourself in this mode. (Note that self-driven screen capture is blocked by
+  macOS Screen Recording permission, so a visual effect is one the user must confirm
+  — you cannot screenshot the window yourself to check it.)
 - **No interaction** (startup dumps, log output, anything observable without
   playing): drive it end to end yourself, read the output, and quit the table
-  yourself when done. The user is hands-off here.
+  yourself with `SIGINT` (Ctrl+C, as above) when done. The user is hands-off here.
 
 ### The NAS tables (functional, ROMs included)
 
