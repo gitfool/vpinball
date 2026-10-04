@@ -72,7 +72,7 @@ Shader::TechniqueDef Shader::shaderTechniqueNames[static_cast<unsigned int>(Shad
       ShaderUniform::Roughness_WrapL_Edge_Thickness, ShaderUniform::cBase_Alpha, ShaderUniform::fDisableLighting_top_below, ShaderUniform::fenvEmissionScale_TexWidth, ShaderUniform::cAmbient_LightRange, ShaderUniform::tex_env,
       ShaderUniform::tex_diffuse_env, ShaderUniform::cClearcoat_EdgeAlpha, ShaderUniform::cGlossy_ImageLerp, ShaderUniform::u_basic_shade_mode, ShaderUniform::refractionTint_thickness, ShaderUniform::mirrorNormal_factor,
       ShaderUniform::objectSpaceNormalMap, ShaderUniform::tex_base_color, ShaderUniform::tex_base_transmission, ShaderUniform::tex_base_normalmap, ShaderUniform::tex_reflection, ShaderUniform::tex_refraction, ShaderUniform::tex_probe_depth,
-      ShaderUniform::clip_plane),
+      ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(basic_with_texture_isMetal),
    SHADER_TECHNIQUE(basic_with_texture_normal),
    SHADER_TECHNIQUE(basic_with_texture_normal_isMetal),
@@ -94,7 +94,7 @@ Shader::TechniqueDef Shader::shaderTechniqueNames[static_cast<unsigned int>(Shad
       ShaderUniform::basicLightPos, ShaderUniform::Roughness_WrapL_Edge_Thickness, ShaderUniform::cBase_Alpha, ShaderUniform::fDisableLighting_top_below, ShaderUniform::fenvEmissionScale_TexWidth, ShaderUniform::cAmbient_LightRange,
       ShaderUniform::tex_env, ShaderUniform::tex_diffuse_env, ShaderUniform::cClearcoat_EdgeAlpha, ShaderUniform::cGlossy_ImageLerp, ShaderUniform::u_basic_shade_mode, ShaderUniform::refractionTint_thickness, ShaderUniform::mirrorNormal_factor,
       ShaderUniform::objectSpaceNormalMap, ShaderUniform::tex_base_color, ShaderUniform::tex_base_transmission, ShaderUniform::tex_base_normalmap, ShaderUniform::tex_reflection, ShaderUniform::tex_refraction, ShaderUniform::tex_probe_depth,
-      ShaderUniform::clip_plane),
+      ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(basic_with_texture_at_isMetal),
    SHADER_TECHNIQUE(basic_with_texture_at_normal),
    SHADER_TECHNIQUE(basic_with_texture_at_normal_isMetal),
@@ -115,7 +115,7 @@ Shader::TechniqueDef Shader::shaderTechniqueNames[static_cast<unsigned int>(Shad
       ShaderUniform::matWorldViewInverseTranspose, ShaderUniform::lightCenter_doShadow, ShaderUniform::balls, ShaderUniform::staticColor_Alpha, ShaderUniform::w_h_height, ShaderUniform::basicLightEmission, ShaderUniform::basicLightPos,
       ShaderUniform::Roughness_WrapL_Edge_Thickness, ShaderUniform::cBase_Alpha, ShaderUniform::fDisableLighting_top_below, ShaderUniform::fenvEmissionScale_TexWidth, ShaderUniform::cAmbient_LightRange, ShaderUniform::tex_env,
       ShaderUniform::tex_diffuse_env, ShaderUniform::cClearcoat_EdgeAlpha, ShaderUniform::cGlossy_ImageLerp, ShaderUniform::u_basic_shade_mode, ShaderUniform::refractionTint_thickness, ShaderUniform::mirrorNormal_factor,
-      ShaderUniform::tex_base_transmission, ShaderUniform::tex_reflection, ShaderUniform::tex_refraction, ShaderUniform::tex_probe_depth, ShaderUniform::clip_plane),
+      ShaderUniform::tex_base_transmission, ShaderUniform::tex_reflection, ShaderUniform::tex_refraction, ShaderUniform::tex_probe_depth, ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(basic_without_texture_isMetal),
    SHADER_TECHNIQUE(basic_without_texture_refl),
    SHADER_TECHNIQUE(basic_without_texture_refl_isMetal),
@@ -126,41 +126,41 @@ Shader::TechniqueDef Shader::shaderTechniqueNames[static_cast<unsigned int>(Shad
 
    // Unshaded
    SHADER_TECHNIQUE(unshaded_without_texture, ShaderUniform::layer, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matWorldView, ShaderUniform::matWorldViewInverseTranspose,
-      ShaderUniform::staticColor_Alpha, ShaderUniform::clip_plane),
+      ShaderUniform::staticColor_Alpha, ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(unshaded_with_texture, ShaderUniform::layer, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matWorldView, ShaderUniform::matWorldViewInverseTranspose,
-      ShaderUniform::staticColor_Alpha, ShaderUniform::tex_base_color, ShaderUniform::clip_plane),
+      ShaderUniform::staticColor_Alpha, ShaderUniform::tex_base_color, ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(unshaded_without_texture_shadow, ShaderUniform::layer, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matWorldView, ShaderUniform::matWorldViewInverseTranspose,
-      ShaderUniform::lightCenter_doShadow, ShaderUniform::balls, ShaderUniform::staticColor_Alpha, ShaderUniform::clip_plane),
+      ShaderUniform::lightCenter_doShadow, ShaderUniform::balls, ShaderUniform::staticColor_Alpha, ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(unshaded_with_texture_shadow, ShaderUniform::layer, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matWorldView, ShaderUniform::matWorldViewInverseTranspose,
-      ShaderUniform::lightCenter_doShadow, ShaderUniform::balls, ShaderUniform::staticColor_Alpha, ShaderUniform::tex_base_color, ShaderUniform::clip_plane),
+      ShaderUniform::lightCenter_doShadow, ShaderUniform::balls, ShaderUniform::staticColor_Alpha, ShaderUniform::tex_base_color, ShaderUniform::clip_plane, ShaderUniform::depthBias),
 
    SHADER_TECHNIQUE(basic_reflection_only, ShaderUniform::layer, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matWorldView, ShaderUniform::matWorldViewInverseTranspose,
-      ShaderUniform::staticColor_Alpha, ShaderUniform::w_h_height, ShaderUniform::mirrorNormal_factor, ShaderUniform::tex_reflection, ShaderUniform::clip_plane),
+      ShaderUniform::staticColor_Alpha, ShaderUniform::w_h_height, ShaderUniform::mirrorNormal_factor, ShaderUniform::tex_reflection, ShaderUniform::clip_plane, ShaderUniform::depthBias),
 
    // BGFX OpenXR shaders
    SHADER_TECHNIQUE(vr_mask, ShaderUniform::matWorldViewProj, ShaderUniform::staticColor_Alpha),
    SHADER_TECHNIQUE(vr_passthrough, ShaderUniform::layer, ShaderUniform::tex_fb_unfiltered, ShaderUniform::tex_depth),
 
    SHADER_TECHNIQUE(bg_decal_without_texture, ShaderUniform::layer, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matWorldView, ShaderUniform::matWorldViewInverseTranspose,
-      ShaderUniform::cBase_Alpha, ShaderUniform::clip_plane),
+      ShaderUniform::cBase_Alpha, ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(bg_decal_with_texture, ShaderUniform::layer, ShaderUniform::alphaTestValue, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matWorldView,
-      ShaderUniform::matWorldViewInverseTranspose, ShaderUniform::cBase_Alpha, ShaderUniform::tex_base_color, ShaderUniform::clip_plane),
+      ShaderUniform::matWorldViewInverseTranspose, ShaderUniform::cBase_Alpha, ShaderUniform::tex_base_color, ShaderUniform::clip_plane, ShaderUniform::depthBias),
 
    SHADER_TECHNIQUE(kickerBoolean, ShaderUniform::layer, ShaderUniform::matProj, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matView, ShaderUniform::matWorldView,
       ShaderUniform::matWorldViewInverseTranspose, ShaderUniform::lightCenter_doShadow, ShaderUniform::balls, ShaderUniform::staticColor_Alpha, ShaderUniform::w_h_height, ShaderUniform::basicLightEmission, ShaderUniform::basicLightPos,
       ShaderUniform::Roughness_WrapL_Edge_Thickness, ShaderUniform::cBase_Alpha, ShaderUniform::fDisableLighting_top_below, ShaderUniform::fenvEmissionScale_TexWidth, ShaderUniform::cAmbient_LightRange, ShaderUniform::tex_env,
       ShaderUniform::tex_diffuse_env, ShaderUniform::cClearcoat_EdgeAlpha, ShaderUniform::cGlossy_ImageLerp, ShaderUniform::u_basic_shade_mode, ShaderUniform::refractionTint_thickness, ShaderUniform::mirrorNormal_factor,
-      ShaderUniform::tex_base_transmission, ShaderUniform::tex_reflection, ShaderUniform::tex_refraction, ShaderUniform::tex_probe_depth, ShaderUniform::clip_plane),
+      ShaderUniform::tex_base_transmission, ShaderUniform::tex_reflection, ShaderUniform::tex_refraction, ShaderUniform::tex_probe_depth, ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(kickerBoolean_isMetal),
 
    SHADER_TECHNIQUE(light_with_texture, ShaderUniform::layer, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matView, ShaderUniform::matWorldView, ShaderUniform::matWorldViewInverseTranspose,
       ShaderUniform::basicLightEmission, ShaderUniform::basicLightPos, ShaderUniform::Roughness_WrapL_Edge_Thickness, ShaderUniform::cBase_Alpha, ShaderUniform::fDisableLighting_top_below, ShaderUniform::fenvEmissionScale_TexWidth,
       ShaderUniform::cAmbient_LightRange, ShaderUniform::tex_env, ShaderUniform::tex_diffuse_env, ShaderUniform::cClearcoat_EdgeAlpha, ShaderUniform::cGlossy_ImageLerp, ShaderUniform::u_basic_shade_mode, ShaderUniform::lightCenter_maxRange,
-      ShaderUniform::lightColor2_falloff_power, ShaderUniform::lightColor_intensity, ShaderUniform::lightingOff, ShaderUniform::tex_light_color, ShaderUniform::clip_plane),
+      ShaderUniform::lightColor2_falloff_power, ShaderUniform::lightColor_intensity, ShaderUniform::lightingOff, ShaderUniform::tex_light_color, ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(light_without_texture, ShaderUniform::layer, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::matWorld, ShaderUniform::matView, ShaderUniform::matWorldView,
       ShaderUniform::matWorldViewInverseTranspose, ShaderUniform::basicLightEmission, ShaderUniform::basicLightPos, ShaderUniform::Roughness_WrapL_Edge_Thickness, ShaderUniform::cBase_Alpha, ShaderUniform::fDisableLighting_top_below,
       ShaderUniform::fenvEmissionScale_TexWidth, ShaderUniform::cAmbient_LightRange, ShaderUniform::tex_env, ShaderUniform::tex_diffuse_env, ShaderUniform::cClearcoat_EdgeAlpha, ShaderUniform::cGlossy_ImageLerp, ShaderUniform::u_basic_shade_mode,
-      ShaderUniform::lightCenter_maxRange, ShaderUniform::lightColor2_falloff_power, ShaderUniform::lightColor_intensity, ShaderUniform::lightingOff, ShaderUniform::clip_plane),
+      ShaderUniform::lightCenter_maxRange, ShaderUniform::lightColor2_falloff_power, ShaderUniform::lightColor_intensity, ShaderUniform::lightingOff, ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(light_with_texture_isMetal),
    SHADER_TECHNIQUE(light_without_texture_isMetal),
 
@@ -194,9 +194,9 @@ Shader::TechniqueDef Shader::shaderTechniqueNames[static_cast<unsigned int>(Shad
       ShaderUniform::alphaTestValueAB_filterMode_addBlend, ShaderUniform::amount_blend_modulate_vs_add_flasherMode, ShaderUniform::tex_flasher_A, ShaderUniform::tex_flasher_B, ShaderUniform::clip_plane),
 
    SHADER_TECHNIQUE(bulb_light, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::blend_modulate_vs_add, ShaderUniform::lightCenter_maxRange, ShaderUniform::lightColor2_falloff_power,
-      ShaderUniform::lightColor_intensity, ShaderUniform::clip_plane),
+      ShaderUniform::lightColor_intensity, ShaderUniform::clip_plane, ShaderUniform::depthBias),
    SHADER_TECHNIQUE(bulb_light_with_ball_shadows, ShaderUniform::matRotViewProj, ShaderUniform::cameraPosWorld, ShaderUniform::balls, ShaderUniform::blend_modulate_vs_add, ShaderUniform::lightCenter_maxRange,
-      ShaderUniform::lightColor2_falloff_power, ShaderUniform::lightColor_intensity, ShaderUniform::clip_plane),
+      ShaderUniform::lightColor2_falloff_power, ShaderUniform::lightColor_intensity, ShaderUniform::clip_plane, ShaderUniform::depthBias),
 
    SHADER_TECHNIQUE(
       fb_rhtonemap, ShaderUniform::layer, ShaderUniform::w_h_height, ShaderUniform::bloom_dither_colorgrade, ShaderUniform::exposure_wcg, ShaderUniform::tex_fb_filtered, ShaderUniform::tex_bloom, ShaderUniform::tex_color_lut, ShaderUniform::tex_depth),
@@ -376,6 +376,7 @@ ShaderUniformDef ShaderUniformDef::coreUniforms[static_cast<unsigned int>(Shader
    SHADER_UNIFORM(ShaderUniformType::Float4v, balls, 8), // Basic & Flasher (for ball shadows)
    SHADER_UNIFORM(ShaderUniformType::Float4, staticColor_Alpha, 1), // Basic & Flasher
    SHADER_UNIFORM(ShaderUniformType::Float4, w_h_height, 1), // Post process & Basic (for screen space reflection/refraction)
+   SHADER_UNIFORM(ShaderUniformType::Float4, depthBias, 1), // BGFX only, per-draw NDC depth bias (.x = NDC z offset)
 
    // Shared material for Ball, Basic and Classic light shaders
    SHADER_UNIFORM(ShaderUniformType::Float4, clip_plane, 1), // OpenGL & BGFX only

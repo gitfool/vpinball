@@ -39,6 +39,7 @@ uniform mat4 matWorld;
 #ifdef CLIP
     uniform vec4 clip_plane;
 #endif
+uniform vec4 depthBias; // .x = per-draw NDC depth offset (BGFX polygon-offset equivalent)
 
 void main()
 {
@@ -68,6 +69,10 @@ void main()
     #elif defined(CLASSIC_LIGHT)
         gl_Position.z = max(gl_Position.z, 0.00006103515625); // clamp lights to near clip plane to avoid them being partially clipped // 0.00006103515625 due to 16bit half float
     #endif
+    // Per-draw depth bias (BGFX polygon-offset equivalent), applied as the last write to z so it composes
+    // with the CLASSIC_LIGHT near-clip clamp instead of being overwritten. The * gl_Position.w term converts
+    // the NDC-space offset into pre-divide clip space so the NDC z shifts by depthBias.x consistently at any depth.
+    gl_Position.z += depthBias.x * gl_Position.w;
     #ifdef TEX
         v_texcoord0 = a_texcoord0;
     #endif

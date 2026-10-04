@@ -22,6 +22,7 @@ $output v_tablePos
 #ifdef CLIP
 	uniform vec4 clip_plane;
 #endif
+uniform vec4 depthBias; // .x = per-draw NDC depth offset (BGFX polygon-offset equivalent)
 
 void main()
 {
@@ -38,4 +39,7 @@ void main()
 	gl_Position = mul(mRotViewProj, vec4(wpos_rel, 1.0));
 	//Disabled since this would move backdrop lights behind other backdrop parts (rendered at z = 0), this could be readded with a max at 0, but I don't get why we would need this type of hack
 	//gl_Position.z = max(gl_Position.z, 0.00006103515625); // clamp lights to near clip plane to avoid them being partially clipped // 0.00006103515625 due to 16bit half float
+	// Per-draw depth bias (BGFX polygon-offset equivalent); no active near-clip clamp here, so it is simply the final z write.
+	// The * gl_Position.w term converts the NDC-space offset into pre-divide clip space (consistent NDC z shift at any depth).
+	gl_Position.z += depthBias.x * gl_Position.w;
 }

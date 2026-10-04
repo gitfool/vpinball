@@ -2842,6 +2842,17 @@ void RenderDevice::DrawMesh(Shader* shader, const bool isTranparentPass, const V
       // This is completely wrong, but needed to preserve backward compatibility. We should sort along the view axis (especially for reflection probes)
       depth = g_pplayer->m_renderer->IsRenderPass(Renderer::REFLECTION_PASS) ? depthBias + center.z : depthBias - center.z;
    // We can not use the real opacity from render states since some legacy code uses the alpha part that writes to the depth buffer (rendered during transparent pass) to mask out opaque parts
+   #if defined(ENABLE_BGFX)
+   // BGFX has no per-draw polygon-offset, so the pending depth bias is pushed to the vertex shaders as a per-draw
+   // NDC z offset. This must be written on the live shader state here at command-record time: SetDrawMesh snapshots
+   // the shader state, and a write at command-replay time (in RenderState::Apply) would be overwritten by that snapshot.
+   // Only the basic/light shaders (lights, decals, kickers, unshaded, bulbs) declare the depthBias uniform; DrawMesh
+   // runs for every shader, so guard on the active technique actually carrying it (HasUniform) to avoid writing it on
+   // shaders that lack it. This mirrors GL/DX9, which only apply the bias on the draws whose render state asked for it.
+   // Mirrors the DX9 D3DRS_DEPTHBIAS mapping (m_depthBias * BASEDEPTHBIAS); a negative bias shifts depth toward the near plane.
+   if (shader->HasUniform(ShaderUniform::depthBias))
+      shader->SetVector(ShaderUniform::depthBias, GetRenderState().GetDepthBias() * BASEDEPTHBIAS, 0.f, 0.f, 0.f);
+   #endif
    cmd->SetDrawMesh(shader, mb, type, startIndex, indexCount, isTranparentPass /* && !GetRenderState().IsOpaque() */, depth);
    cmd->m_dependency = m_nextRenderCommandDependency;
    m_nextRenderCommandDependency = nullptr;

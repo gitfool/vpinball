@@ -373,7 +373,10 @@ void RenderState::Apply(RenderDevice* device)
       active_state.m_depthBias = m_depthBias;
       device->m_curStateChanges++;
       #if defined(ENABLE_BGFX)
-      // FIXME implement depth bias for BGFX
+      // Depth bias is applied per draw via the 'depthBias' shader uniform set in
+      // RenderDevice::DrawMesh (BGFX has no per-draw polygon-offset in setState, and
+      // any shader-state write here at command-replay time would be discarded by the
+      // record-time snapshot). Nothing to do in this replay-time apply block.
 
       #elif defined(ENABLE_OPENGL)
       if (m_depthBias == 0.0f)
