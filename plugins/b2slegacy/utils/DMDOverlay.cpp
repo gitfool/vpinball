@@ -24,6 +24,7 @@ namespace B2SLegacy::DMDOverlay
 
 MSGPI_BOOL_VAL_SETTING(scoreViewDMDOverlayProp, "ScoreViewDMDOverlay", "ScoreView DMD Overlay", "Enable a DMD overlay on the Score View", true, false);
 MSGPI_BOOL_VAL_SETTING(scoreViewDMDAutoPosProp, "ScoreViewDMDAutoPos", "ScoreView DMD Automatic position", "Enable automatic DMD bounds detection", true, false);
+MSGPI_INT_VAL_SETTING(scoreViewDMDAutoPosThresholdProp, "ScoreViewDMDAutoPosThreshold", "ScoreView DMD autopos darkness tolerance", "Luminance tolerance (0-255) for automatic bounds detection: pixels this dark or darker count as part of the DMD hole. Raise it when the hole is not pure black (e.g. a dark maroon fullDMD cutout). 0 keeps the original behavior.", true, 0, 255, 0);
 MSGPI_FLOAT_VAL_SETTING(scoreViewDMDXProp, "ScoreViewDMDX", "ScoreView DMD X position", "Horizontal position in percent: 0 = left, 50 = centered, 100 = right", true, 0.f, 100.f, 0.1f, 0.f);
 MSGPI_FLOAT_VAL_SETTING(scoreViewDMDYProp, "ScoreViewDMDY", "ScoreView DMD Y position", "Vertical position in percent: 0 = top, 50 = centered, 100 = bottom", true, 0.f, 100.f, 0.1f, 0.f);
 MSGPI_FLOAT_VAL_SETTING(scoreViewDMDWProp, "ScoreViewDMDW", "ScoreView DMD width", "Width in percent of the display", true, 0.f, 100.f, 0.1f, 0.f);
@@ -31,6 +32,7 @@ MSGPI_FLOAT_VAL_SETTING(scoreViewDMDHProp, "ScoreViewDMDH", "ScoreView DMD heigh
 
 MSGPI_BOOL_VAL_SETTING(backglassDMDOverlayProp, "BackglassDMDOverlay", "Backglass DMD Overlay", "Enable a DMD overlay on the Backglass", true, false);
 MSGPI_BOOL_VAL_SETTING(backglassDMDAutoPosProp, "BackglassDMDAutoPos", "Backglass DMD Automatic position", "Enable automatic DMD bounds detection", true, false);
+MSGPI_INT_VAL_SETTING(backglassDMDAutoPosThresholdProp, "BackglassDMDAutoPosThreshold", "Backglass DMD autopos darkness tolerance", "Luminance tolerance (0-255) for automatic bounds detection: pixels this dark or darker count as part of the DMD hole. Raise it when the hole is not pure black (e.g. a dark maroon fullDMD cutout). 0 keeps the original behavior.", true, 0, 255, 0);
 MSGPI_FLOAT_VAL_SETTING(backglassDMDXProp, "BackglassDMDX", "Backglass DMD X position", "Horizontal position in percent: 0 = left, 50 = centered, 100 = right", true, 0.f, 100.f, 0.1f, 0.f);
 MSGPI_FLOAT_VAL_SETTING(backglassDMDYProp, "BackglassDMDY", "Backglass DMD Y position", "Vertical position in percent: 0 = top, 50 = centered, 100 = bottom", true, 0.f, 100.f, 0.1f, 0.f);
 MSGPI_FLOAT_VAL_SETTING(backglassDMDWProp, "BackglassDMDW", "Backglass DMD width", "Width in percent of the display", true, 0.f, 100.f, 0.1f, 0.f);
@@ -55,12 +57,14 @@ void DMDOverlay::RegisterSettings(const MsgPluginAPI* const msgApi, unsigned int
 {
    msgApi->RegisterSetting(endpointId, &backglassDMDOverlayProp);
    msgApi->RegisterSetting(endpointId, &backglassDMDAutoPosProp);
+   msgApi->RegisterSetting(endpointId, &backglassDMDAutoPosThresholdProp);
    msgApi->RegisterSetting(endpointId, &backglassDMDXProp);
    msgApi->RegisterSetting(endpointId, &backglassDMDYProp);
    msgApi->RegisterSetting(endpointId, &backglassDMDWProp);
    msgApi->RegisterSetting(endpointId, &backglassDMDHProp);
    msgApi->RegisterSetting(endpointId, &scoreViewDMDOverlayProp);
    msgApi->RegisterSetting(endpointId, &scoreViewDMDAutoPosProp);
+   msgApi->RegisterSetting(endpointId, &scoreViewDMDAutoPosThresholdProp);
    msgApi->RegisterSetting(endpointId, &scoreViewDMDXProp);
    msgApi->RegisterSetting(endpointId, &scoreViewDMDYProp);
    msgApi->RegisterSetting(endpointId, &scoreViewDMDWProp);
@@ -74,6 +78,7 @@ void DMDOverlay::LoadSettings(bool isScoreView)
    {
       m_enable = scoreViewDMDOverlayProp_Val != 0;
       m_detectDmdFrame = scoreViewDMDAutoPosProp_Val != 0;
+      m_autoPosThreshold = scoreViewDMDAutoPosThresholdProp_Val;
       if (!m_detectDmdFrame)
       {
          m_manualFrame = vec4<float>(scoreViewDMDXProp_Val, scoreViewDMDYProp_Val, scoreViewDMDWProp_Val, scoreViewDMDHProp_Val);
@@ -83,6 +88,7 @@ void DMDOverlay::LoadSettings(bool isScoreView)
    {
       m_enable = backglassDMDOverlayProp_Val != 0;
       m_detectDmdFrame = backglassDMDAutoPosProp_Val != 0;
+      m_autoPosThreshold = backglassDMDAutoPosThresholdProp_Val;
       if (!m_detectDmdFrame)
       {
          m_manualFrame = vec4<float>(backglassDMDXProp_Val, backglassDMDYProp_Val, backglassDMDWProp_Val, backglassDMDHProp_Val);
@@ -222,7 +228,9 @@ DMDOverlay::vec4<int> DMDOverlay::SearchDmdSubFrame(VPXTexture image, const VPXT
    { return static_cast<float>(frame.z) / texW - 1.f * fabs(0.5f - static_cast<float>(frame.x + frame.z / 2) / texW); };
 
    const int padding = (2 * texInfo->width) / 1920;
-   float lumMin = 0.f;
+   // Non-black DMD holes (e.g. a dark maroon fullDMD cutout) must still read as dark; the tolerance raises the darkness floor so the search spans the whole hole.
+   const float lumMin0 = std::clamp(static_cast<float>(m_autoPosThreshold), 0.f, 255.f);
+   float lumMin = lumMin0;
    float lumMax = 256.f;
    vec4<int> searchFrame(0, 0, texInfo->width, texInfo->height);
    vec4<int> bestFrame;
