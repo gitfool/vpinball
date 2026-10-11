@@ -51,6 +51,7 @@ private:
 
    bool m_detectDmdFrame = false;
    int m_autoPosThreshold = 0;
+   int m_loadedAutoPosThreshold = 0;
    VPXTexture m_backImage = nullptr;
    CtlResId m_detectSrcId { };
    bool m_stopSearching = false;

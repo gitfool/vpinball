@@ -73,6 +73,7 @@ void DMDOverlay::RegisterSettings(const MsgPluginAPI* const msgApi, unsigned int
 
 void DMDOverlay::LoadSettings(bool isScoreView)
 {
+   const bool wasDetecting = m_detectDmdFrame;
    if (isScoreView)
    {
       m_enable = scoreViewDMDOverlayProp_Val != 0;
@@ -101,6 +102,18 @@ void DMDOverlay::LoadSettings(bool isScoreView)
    }
    if (m_enableOverride != -1)
       m_enable = (m_enableOverride == 0);
+   // Force a re-search when autopos was just enabled, or when the darkness tolerance was
+   // changed live from the LiveUI. LoadSettings is called every frame, so comparing the newly
+   // read threshold against the one in effect lets a slider change take effect without the user
+   // having to toggle autopos off and on. Only reset when something actually changed to avoid
+   // re-search churn every frame.
+   const bool thresholdChanged = m_detectDmdFrame && (m_autoPosThreshold != m_loadedAutoPosThreshold);
+   if ((m_detectDmdFrame && !wasDetecting) || thresholdChanged)
+   {
+      m_frame = vec4<int>();
+      m_detectSrcId.id = 0;
+   }
+   m_loadedAutoPosThreshold = m_autoPosThreshold;
 }
 
 void DMDOverlay::UpdateBackgroundImage(VPXTexture backImage)
@@ -148,7 +161,12 @@ void DMDOverlay::Render(VPXRenderContext2D* ctx)
    }
 
    if (m_frameSearch.valid() && m_frameSearch.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+   {
       m_frame = m_frameSearch.get();
+      // One line per completed autopos search so the detected rectangle can be read from the log
+      // per threshold value, instead of eyeballing the result. Coordinates are back-image pixels.
+      LOGI(std::format("B2S DMD autopos: threshold={} -> frame {},{} {}x{}", m_autoPosThreshold, m_frame.x, m_frame.y, m_frame.z, m_frame.w));
+   }
 
    if (m_frame.z == 0 || m_frame.w == 0)
       return;
