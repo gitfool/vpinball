@@ -1,0 +1,4 @@
+# Keep shell scripts LF so they run on mac/unix regardless of the committer's
+# core.autocrlf. pwsh runs LF scripts fine on every platform too, so pin both.
+*.sh   text eol=lf
+*.ps1  text eol=lf

@@ -28,7 +28,10 @@ DUNGEON_BRANCH="dungeon"
 STEERING_CANONICAL="vpinball-dungeon-steering.md"
 STEERING_LINK_REL=".kiro/steering/vpinball-dungeon.md"
 STEERING_LINK_TARGET="../../../vpinball-dungeon/${STEERING_CANONICAL}"
-EXCLUDE_ENTRY="/.kiro/"
+PRESETS_CANONICAL_REL="cmake/CMakeUserPresets.json"
+PRESETS_LINK_REL="CMakeUserPresets.json"
+PRESETS_LINK_TARGET="../vpinball-dungeon/${PRESETS_CANONICAL_REL}"
+EXCLUDE_ENTRIES=("/.kiro/" "/CMakeUserPresets.json")
 
 log() { printf '  %s\n' "$*"; }
 die() { printf 'vpinball-dungeon-setup: %s\n' "$*" >&2; exit 1; }
@@ -75,7 +78,7 @@ fi
 [ -f "$WORKTREE/$STEERING_CANONICAL" ] \
   || die "canonical steering file missing in worktree: $WORKTREE/$STEERING_CANONICAL"
 
-# --- wire the steering symlink into the main checkout (idempotent) ------------
+# --- wire the Kiro steering symlink into the main checkout (idempotent) -------
 LINK_PATH="$MAIN/$STEERING_LINK_REL"
 mkdir -p "$(dirname "$LINK_PATH")"
 if [ -L "$LINK_PATH" ] && [ "$(readlink "$LINK_PATH")" = "$STEERING_LINK_TARGET" ]; then
@@ -86,17 +89,34 @@ else
 fi
 [ -f "$LINK_PATH" ] || die "steering symlink does not resolve to a file."
 
-# --- keep .kiro out of the main repo's git view (local exclude, not .gitignore)
+# --- wire the CMake presets symlink into the main checkout (idempotent) -------
+# The personal CMakeUserPresets.json lives on the dungeon orphan so it survives a
+# destructive clean and never diffs; the main checkout just points at it.
+[ -f "$WORKTREE/$PRESETS_CANONICAL_REL" ] \
+  || die "canonical presets file missing in worktree: $WORKTREE/$PRESETS_CANONICAL_REL"
+PRESETS_LINK_PATH="$MAIN/$PRESETS_LINK_REL"
+if [ -L "$PRESETS_LINK_PATH" ] && [ "$(readlink "$PRESETS_LINK_PATH")" = "$PRESETS_LINK_TARGET" ]; then
+  log "presets symlink already correct."
+else
+  ln -sfn "$PRESETS_LINK_TARGET" "$PRESETS_LINK_PATH"
+  log "presets symlink wired: $PRESETS_LINK_REL -> $PRESETS_LINK_TARGET"
+fi
+[ -f "$PRESETS_LINK_PATH" ] || die "presets symlink does not resolve to a file."
+
+# --- keep personal files out of the main repo's git view (local exclude) ------
 EXCLUDE_FILE="$COMMON_GIT/info/exclude"
 mkdir -p "$(dirname "$EXCLUDE_FILE")"
 touch "$EXCLUDE_FILE"
-if grep -qxF "$EXCLUDE_ENTRY" "$EXCLUDE_FILE"; then
-  log "local exclude already has $EXCLUDE_ENTRY"
-else
-  printf '%s\n' "$EXCLUDE_ENTRY" >> "$EXCLUDE_FILE"
-  log "added $EXCLUDE_ENTRY to local exclude"
-fi
+for entry in "${EXCLUDE_ENTRIES[@]}"; do
+  if grep -qxF "$entry" "$EXCLUDE_FILE"; then
+    log "local exclude already has $entry"
+  else
+    printf '%s\n' "$entry" >> "$EXCLUDE_FILE"
+    log "added $entry to local exclude"
+  fi
+done
 
 printf '\nvpinball-dungeon: ready.\n'
 printf '  docs + steering live in: %s\n' "$WORKTREE"
-printf '  steering active in main checkout via: %s\n' "$STEERING_LINK_REL"
+printf '  kiro steering active in main checkout via: %s\n' "$STEERING_LINK_REL"
+printf '  cmake presets active in main checkout via: %s\n' "$PRESETS_LINK_REL"
