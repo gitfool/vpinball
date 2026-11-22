@@ -23,13 +23,12 @@
       "cacheVariables": {
         "PLATFORM": "windows",
         "ARCH": "x64",
-        "CMAKE_C_COMPILER_LAUNCHER": "ccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+        "CMAKE_VS_GLOBALS": "UseMultiToolTask=true;EnforceProcessCountAcrossBuilds=true"
       }
     }
   ],
   "buildPresets": [
     { "name": "windows-mingw", "configurePreset": "windows-mingw" },
-    { "name": "windows-x64", "configurePreset": "windows-x64", "configuration": "Release" }
+    { "name": "windows-x64", "configurePreset": "windows-x64", "configuration": "Release", "jobs": 0 }
   ]
 }
